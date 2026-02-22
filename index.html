@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jessie Math - 迷宮核心鑰匙 (質因數分解與短除法)</title>
+    
+    <meta name="description" content="© 2025–2026 Jessie Math 捷析老師. All rights reserved.">
+    <meta property="og:title" content="Jessie Math - 迷宮核心鑰匙 (質因數分解與短除法)">
+    <meta property="og:description" content="© 2025–2026 Jessie Math 捷析老師. All rights reserved.">
+    <meta property="og:type" content="website">
+    
+    <meta property="og:image" content="g6-u1-2.jpg">
+    <meta property="og:image:width" content="1024">
+    <meta property="og:image:height" content="1536">
+    <meta property="og:image:alt" content="Jessie Math 遊戲封面">
+    
+    <link rel="image_src" href="g6-u1-2.jpg">
+    
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Jessie Math - 迷宮核心鑰匙 (質因數分解與短除法)">
+    <meta name="twitter:description" content="© 2025–2026 Jessie Math 捷析老師. All rights reserved.">
+    <meta name="twitter:image" content="g6-u1-2.jpg">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* ====== 全域與字體設定 ====== */
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@800&family=Noto+Sans+TC:wght@500;700;900&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans TC', sans-serif;
+            background: linear-gradient(135deg, #2b2b2b, #1a1a1a);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ====== 手機直向警告提示 (RWD 手機強制橫向) ====== */
+        #orientation-warning {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background-color: #1a1a1a;
+            color: #f1c40f;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #orientation-warning i {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: rotatePhone 1.5s infinite ease-in-out;
+        }
+
+        @keyframes rotatePhone {
+            0% { transform: rotate(0deg); }
+            50% { transform: rotate(-90deg); }
+            100% { transform: rotate(-90deg); }
+        }
+
+        /* 當螢幕寬度小於 768px (手機尺寸) 且為直向 (portrait) 時顯示警告 */
+        @media screen and (max-width: 767px) and (orientation: portrait) {
+            #orientation-warning {
+                display: flex;
+            }
+            body {
+                overflow: hidden; /* 鎖定背景滾動 */
+            }
+        }
+
+        /* ====== 導覽列 (Hero區) ====== */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 30px;
+            background-color: #ffffff;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .brand img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 3px solid #e67e22;
+            background-color: transparent;
+            object-fit: contain;
+        }
+
+        .brand-name {
+            font-family: 'Nunito', sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            color: #2c3e50;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 700;
+            border: 1px solid #dcdde1;
+            color: #353b48;
+            background-color: #fff;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background-color: #f5f6fa;
+        }
+
+        .nav-btn.active-back {
+            border-color: #7b61ff;
+            color: #7b61ff;
+            background-color: #f8f5ff;
+        }
+
+        .nav-btn.active-back:hover {
+            background-color: #f0eaff;
+        }
+
+        /* ====== 遊戲容器設定 ====== */
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            flex: 1;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .stone-panel {
+            background: linear-gradient(to bottom, #596275, #303952);
+            border: 8px solid #2f3640;
+            border-radius: 15px;
+            box-shadow: 
+                inset 0 0 20px rgba(0,0,0,0.5),
+                10px 10px 30px rgba(0,0,0,0.6);
+            padding: 30px;
+            position: relative;
+        }
+
+        /* ====== 第一頁：登入與規則 ====== */
+        #start-screen {
+            text-align: center;
+        }
+
+        .game-title {
+            font-size: 42px;
+            color: #f1c40f;
+            text-shadow: 2px 2px 5px #000;
+            margin-bottom: 10px;
+            font-weight: 900;
+        }
+
+        .game-subtitle {
+            font-size: 18px;
+            color: #bdc3c7;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin: 20px 0;
+        }
+
+        .input-group input {
+            padding: 15px 25px;
+            font-size: 18px;
+            border-radius: 30px;
+            border: 2px solid #f1c40f;
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            text-align: center;
+            width: 60%;
+            outline: none;
+        }
+
+        .start-btn {
+            padding: 15px 40px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 30px;
+            border: none;
+            background: linear-gradient(to right, #e67e22, #f1c40f);
+            color: #2c3e50;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(241, 196, 15, 0.4);
+            transition: transform 0.1s;
+        }
+
+        .start-btn:active {
+            transform: scale(0.95);
+        }
+
+        .rules {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: left;
+            border-left: 5px solid #e67e22;
+        }
+
+        /* ====== 第二頁：遊戲主畫面 ====== */
+        #game-screen {
+            display: none;
+            text-align: center;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #f1c40f;
+            font-weight: bold;
+        }
+
+        /* 核心密碼鎖 */
+        .core-lock {
+            background: #222f3e;
+            border: 10px solid #10ac84;
+            border-radius: 50%;
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 30px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(16, 172, 132, 0.5);
+            transition: all 0.5s;
+            position: relative;
+        }
+
+        .lock-number {
+            font-size: 72px;
+            font-weight: 900;
+            color: #1dd1a1;
+            text-shadow: 0 0 10px #1dd1a1;
+        }
+
+        /* 短除法歷程 */
+        .history-board {
+            min-height: 80px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 24px;
+            color: #c8d6e5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .history-step {
+            background: #e67e22;
+            color: #fff;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        /* 質數齒輪按鈕 */
+        .prime-gears {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .gear-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            border: none;
+            background: linear-gradient(135deg, #7f8c8d, #95a5a6);
+            color: #2c3e50;
+            font-size: 24px;
+            font-weight: 900;
+            cursor: pointer;
+            box-shadow: 2px 5px 10px rgba(0,0,0,0.5);
+            border: 3px dashed #34495e;
+            transition: all 0.2s;
+        }
+
+        .gear-btn:hover {
+            transform: rotate(15deg) scale(1.1);
+            background: linear-gradient(135deg, #bdc3c7, #ecf0f1);
+        }
+
+        .gear-btn:active {
+            transform: scale(0.9);
+        }
+
+        /* ====== 動效設計 ====== */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+        .error-shake {
+            animation: shake 0.5s;
+            border-color: #e74c3c !important;
+            box-shadow: 0 0 30px rgba(231, 76, 60, 0.8) !important;
+        }
+        .lock-number.error-text {
+            color: #e74c3c;
+            text-shadow: 0 0 10px #e74c3c;
+        }
+
+        @keyframes openDoor {
+            0% { transform: scale(1); opacity: 1; }
+            40% { transform: scale(1.1); box-shadow: 0 0 80px rgba(241, 196, 15, 1); }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        .door-open-anim {
+            animation: openDoor 1.5s forwards;
+            pointer-events: none;
+        }
+
+        /* ====== 第三頁：通關與勳章畫面 ====== */
+        #win-screen {
+            display: none;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .win-title {
+            font-size: 48px;
+            color: #f1c40f;
+            text-shadow: 0 0 15px rgba(241, 196, 15, 0.8);
+            margin-bottom: 20px;
+            font-weight: 900;
+        }
+
+        .medal-img {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 6px solid #f1c40f;
+            box-shadow: 0 0 30px rgba(241, 196, 15, 0.8), inset 0 0 10px rgba(0,0,0,0.5);
+            object-fit: cover;
+            margin: 20px auto;
+            display: block;
+            animation: popIn 1s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        /* ====== 頁尾 (Footer) 專屬品牌設計 ====== */
+        footer {
+            margin-top: auto;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .footer-pill {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 12px 30px;
+            border-radius: 50px;
+            gap: 30px;
+            backdrop-filter: blur(5px);
+            flex-wrap: wrap;
+        }
+
+        .footer-left, .footer-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .footer-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #f1c40f;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #f1c40f;
+        }
+
+        .footer-copy, .footer-tagline {
+            color: #bdc3c7;
+            font-size: 14px;
+            letter-spacing: 0.5px;
+        }
+
+        .footer-icon i {
+            color: #e67e22;
+            font-size: 18px;
+        }
+
+        /* ====== RWD 細節調整 (針對小螢幕與平板) ====== */
+        @media screen and (max-width: 900px) {
+            .navbar {
+                flex-wrap: wrap;
+                justify-content: center;
+                gap: 15px;
+                padding: 15px;
+            }
+            .nav-links {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .core-lock {
+                width: 150px;
+                height: 150px;
+            }
+            .lock-number {
+                font-size: 50px;
+            }
+            .gear-btn {
+                width: 50px;
+                height: 50px;
+                font-size: 20px;
+            }
+            .game-title {
+                font-size: 32px;
+            }
+            .footer-pill {
+                flex-direction: column;
+                gap: 10px;
+                border-radius: 20px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="orientation-warning">
+        <i class="fa-solid fa-mobile-screen-button"></i>
+        <span>為獲得最佳遊戲體驗<br>請將手機轉為「橫向」進行遊戲</span>
+    </div>
+
+    <header class="navbar">
+        <div class="brand">
+            <img src="JESSIEMATH-Q.png" alt="Jessie Math">
+            <span class="brand-name">Jessie Math</span>
+        </div>
+        <div class="nav-links">
+            <a href="https://jessiemath0703-chu.github.io/website2/" class="nav-btn">
+                <i class="fa-solid fa-house" style="color: #4285F4;"></i> 首頁
+            </a>
+            <a href="https://jessiemath0703-chu.github.io/Game-Lobby/" class="nav-btn">
+                <i class="fa-solid fa-gamepad" style="color: #4285F4;"></i> 遊戲大廳
+            </a>
+            <a href="https://jessiemath0703-chu.github.io/Game-Lobby/#g6-u1" class="nav-btn active-back">
+                <i class="fa-solid fa-rotate-left"></i> 六年級質因數分解與短除法
+            </a>
+        </div>
+    </header>
+
+    <div class="container">
+        <div id="start-screen" class="stone-panel">
+            <h1 class="game-title">迷宮核心鑰匙</h1>
+            <div class="game-subtitle">g6-U1 質因數短除 ｜ 啟動巨大機械石門</div>
+            
+            <div class="input-group">
+                <input type="text" id="playerName" placeholder="請輸入探險家姓名..." autocomplete="off">
+            </div>
+            
+            <button class="start-btn" onclick="startGame()">進入迷宮</button>
+
+            <div class="rules">
+                <h3>📜 迷宮生存法則：</h3>
+                <p>1. 巨大的石門被密碼鎖上了，你必須使用**短除法**來拆解密碼。</p>
+                <p>2. 點擊下方的「質數齒輪」，若能整除鎖上的數字，就能削減石門的防禦值。</p>
+                <p>3. 將數字一路分解直到變成 **1**，就能開啟石門前往下一層！</p>
+                <p>4. ⚠️ 挑戰目標：**連續成功開啟 15 扇石門**，即可獲得專屬勳章！若中途按錯齒輪，連續紀錄將會歸零喔！</p>
+            </div>
+        </div>
+
+        <div id="game-screen" class="stone-panel">
+            <div class="status-bar">
+                <span id="displayPlayerName"><i class="fa-solid fa-user"></i> 玩家：</span>
+                <span id="scoreDisplay" style="color:#1dd1a1;"><i class="fa-solid fa-door-open"></i> 連續開啟：0 / 15 扇</span>
+            </div>
+
+            <div class="core-lock" id="coreLock">
+                <div class="lock-number" id="currentNumber">60</div>
+            </div>
+
+            <div class="history-board" id="historyBoard">
+                等待輸入質因數...
+            </div>
+
+            <h3>⚙️ 選擇質數齒輪進行分解：</h3>
+            <div class="prime-gears">
+                <button class="gear-btn" onclick="attemptDivide(2)">2</button>
+                <button class="gear-btn" onclick="attemptDivide(3)">3</button>
+                <button class="gear-btn" onclick="attemptDivide(5)">5</button>
+                <button class="gear-btn" onclick="attemptDivide(7)">7</button>
+                <button class="gear-btn" onclick="attemptDivide(11)">11</button>
+                <button class="gear-btn" onclick="attemptDivide(13)">13</button>
+            </div>
+        </div>
+
+        <div id="win-screen" class="stone-panel">
+            <h2 class="win-title">🎉 試煉完成！</h2>
+            <p style="font-size: 20px; line-height: 1.6;">太厲害了，探險家 <span id="winPlayerName" style="color:#e67e22; font-weight:bold;"></span>！<br>你成功連續開啟了 15 扇重型石門，完美掌握了短除法的奧秘！</p>
+            
+            <img src="G6-U1.jpg" alt="迷宮核心勳章" class="medal-img">
+            
+            <p style="font-size: 24px; color: #1dd1a1; font-weight: bold; margin-bottom: 30px;">獲得榮譽：迷宮核心勳章</p>
+            
+            <button class="start-btn" onclick="location.reload()">再次挑戰</button>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-pill">
+            <div class="footer-left">
+                <div class="footer-dot" aria-hidden="true"></div>
+                <div class="footer-copy">© 2025–2026 Jessie Math 捷析老師. All rights reserved.</div>
+            </div>
+            <div class="footer-right">
+                <div class="footer-icon" aria-hidden="true"><i class="fas fa-compass"></i></div>
+                <div class="footer-tagline">數學不迷路，Jessie帶你走向理解。</div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        let playerName = "";
+        let targetNumber = 0;
+        let currentNumber = 0;
+        let score = 0; // 連續通關數
+        let factorsHistory = [];
+        let isAnimating = false;
+
+        // 【新增功能 1】建立專屬數字題庫 (適合短除法且涵蓋多種質因數)
+        const puzzleBankTemplate = [
+            12, 14, 15, 18, 20, 24, 27, 28, 30, 32, 36, 40, 42, 45, 48, 
+            50, 54, 56, 60, 63, 64, 70, 72, 75, 80, 84, 90, 96, 98, 100, 
+            105, 108, 112, 120, 126, 130, 135, 140, 144, 150
+        ];
+        let currentPuzzleBank = [];
+
+        // 洗牌演算法 (Fisher-Yates Shuffle)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // 從題庫抽題，如果抽完就重新複製一份題庫並洗牌
+        function getNextPuzzle() {
+            if (currentPuzzleBank.length === 0) {
+                currentPuzzleBank = [...puzzleBankTemplate]; // 複製原題庫
+                shuffleArray(currentPuzzleBank); // 洗牌
+            }
+            return currentPuzzleBank.pop(); // 抽出最後一題
+        }
+
+        function startGame() {
+            const nameInput = document.getElementById("playerName").value.trim();
+            if (nameInput === "") {
+                alert("請先輸入你的姓名，才能進入迷宮！");
+                return;
+            }
+            
+            playerName = nameInput;
+            document.getElementById("displayPlayerName").innerHTML = `<i class="fa-solid fa-user"></i> 探險家：${playerName}`;
+            document.getElementById("winPlayerName").innerText = playerName;
+            
+            document.getElementById("start-screen").style.display = "none";
+            document.getElementById("game-screen").style.display = "block";
+
+            initNewLevel();
+        }
+
+        function initNewLevel() {
+            // 使用洗牌機制的數字
+            targetNumber = getNextPuzzle();
+            currentNumber = targetNumber;
+            factorsHistory = [];
+            isAnimating = false;
+            
+            updateLockDisplay();
+            document.getElementById("historyBoard").innerHTML = "準備啟動分解程序...";
+            
+            const lock = document.getElementById("coreLock");
+            lock.classList.remove("door-open-anim");
+            lock.style.borderColor = "#10ac84";
+            lock.style.boxShadow = "0 0 30px rgba(16, 172, 132, 0.5)";
+            lock.style.transform = "scale(1)";
+            lock.style.opacity = "1";
+        }
+
+        function updateLockDisplay() {
+            document.getElementById("currentNumber").innerText = currentNumber;
+            document.getElementById("scoreDisplay").innerHTML = `<i class="fa-solid fa-door-open"></i> 連續開啟：${score} / 15 扇`;
+        }
+
+        function attemptDivide(prime) {
+            if(isAnimating) return;
+
+            const lock = document.getElementById("coreLock");
+            const numberText = document.getElementById("currentNumber");
+
+            if (currentNumber % prime === 0) {
+                currentNumber = currentNumber / prime;
+                factorsHistory.push(prime);
+                
+                let historyHTML = factorsHistory.map(p => `<span class="history-step">÷ ${p}</span>`).join(" ");
+                document.getElementById("historyBoard").innerHTML = historyHTML;
+                
+                updateLockDisplay();
+
+                if (currentNumber === 1) {
+                    isAnimating = true;
+                    score++;
+                    updateLockDisplay();
+                    
+                    lock.style.borderColor = "#f1c40f";
+                    numberText.innerText = "OPEN";
+                    
+                    if (score >= 15) {
+                        setTimeout(() => {
+                            document.getElementById("game-screen").style.display = "none";
+                            document.getElementById("win-screen").style.display = "block";
+                        }, 800);
+                    } else {
+                        lock.classList.add("door-open-anim");
+                        document.getElementById("historyBoard").innerHTML = "✨ 石門開啟！前往下一層...";
+                        
+                        setTimeout(() => {
+                            initNewLevel();
+                        }, 1500);
+                    }
+                }
+            } else {
+                score = 0;
+                updateLockDisplay();
+                
+                document.getElementById("historyBoard").innerHTML = "⚠️ 密碼錯誤！防禦系統重啟，連續紀錄歸零！";
+                
+                lock.classList.add("error-shake");
+                numberText.classList.add("error-text");
+                
+                setTimeout(() => {
+                    lock.classList.remove("error-shake");
+                    numberText.classList.remove("error-text");
+                }, 500);
+            }
+        }
+    </script>
+</body>
+</html>
